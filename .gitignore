@@ -20,3 +20,9 @@ manpages/
 *.egg-info/
 *.egg
 cocaine_tools
+
+# [Debian]
+debian/cocaine-tools*
+debian/cocaine-tornado-proxy*
+debian/files
+debian/tmp/
