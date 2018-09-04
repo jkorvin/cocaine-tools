@@ -1,3 +1,11 @@
+cocaine-tools (0.12.14.7) unstable; urgency=low
+
+  * [Repository]: Add debuild artifacts to gitignore.
+  * [Tools]: Bash completion for vicodyn.
+  * [Tools]: Vicodyn info with filter by app.
+
+ -- Artem Selishchev <arselishev@gmail.com>  Tue, 04 Sep 2018 16:08:12 +0300
+
 cocaine-tools (0.12.14.6) unstable; urgency=low
 
   * [Tools]: Uuid command.
