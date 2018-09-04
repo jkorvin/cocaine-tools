@@ -9,7 +9,7 @@ _cocaine_tool()
 
     COMPREPLY=()
     cur="${COMP_WORDS[COMP_CWORD]}"
-    subcommands_1="app cluster crashlog group help info locate logging metrics profile routing runlist timeouts tracing version"
+    subcommands_1="app cluster crashlog group help info locate logging metrics profile routing runlist timeouts tracing vicodyn version"
     subcommands_app="check help import list pause remove restart start stop upload view"
     subcommands_profile="copy edit help list remove rename upload view"
     subcommands_runlist="add-app copy create edit help list remove remove-app rename upload view"
@@ -18,6 +18,7 @@ _cocaine_tool()
     subcommands_tracing="help remove store view"
     subcommands_timeouts="drop help remove store view"
     subcommands_logging="help list_filters list_loggers remove_filter set_cluster_filter set_filter"
+    subcommands_vicodyn="info apps peers"
 
     if [[ ${COMP_CWORD} == 1 ]] ; then
         COMPREPLY=( $(compgen -W "${subcommands_1}" -- ${cur}) )
@@ -265,6 +266,12 @@ _cocaine_tool()
     logging)
         if [[ ${COMP_CWORD} == 2 ]] ; then
             COMPREPLY=( $(compgen -W "${subcommands_logging}" -- ${cur}) )
+            return 0
+        fi
+        ;;
+    vicodyn)
+        if [[ ${COMP_CWORD} == 2 ]] ; then
+            COMPREPLY=( $(compgen -W "${subcommands_vicodyn}" -- ${cur}) )
             return 0
         fi
 
