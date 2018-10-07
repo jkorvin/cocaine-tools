@@ -57,15 +57,12 @@ except ImportError:
 
 from cocaine.logger import CocaineHandler
 from cocaine.logger import Logger
-from cocaine.services import Service
+from cocaine.services import Service, SecureServiceRepository
 from cocaine.services import Locator
 from cocaine.exceptions import ServiceError
 from cocaine.exceptions import DisconnectionError
 from cocaine.services import EmptyResponse
 from cocaine.detail.trace import Trace
-
-from cocaine.tools.dispatch import PooledServiceFactory
-from cocaine.tools.plugins.secure.tvm import TVM
 
 from cocaine.proxy.helpers import Endpoints
 from cocaine.proxy.helpers import extract_app_and_event
@@ -270,6 +267,7 @@ class CocaineProxy(object):
                  forcegen_request_header=False,
                  default_tracing_chance=DEFAULT_TRACING_CHANCE,
                  configuration_service="unicorn",
+                 security_mod='',
                  client_id=0,
                  client_secret='',
                  mapped_headers=[],
@@ -321,10 +319,14 @@ class CocaineProxy(object):
 
         self.logger.info("conf path in `%s` configuration service: %s",
                          configuration_service, tracing_conf_path)
-        repo = PooledServiceFactory(self.locator_endpoints)
-        repo.secure = TVM(repo, client_id, client_secret)
+        repo = SecureServiceRepository(
+            self.locator_endpoints,
+            mod=security_mod,
+            client_id=client_id,
+            client_secret=client_secret
+        )
 
-        if client_id == 0 or client_secret == '':
+        if security_mod == '' or client_id == 0 or client_secret == '':
             self.logger.info("using non-authenticated unicorn access")
             self.unicorn = repo.create_service(configuration_service)
         else:
@@ -1011,6 +1013,7 @@ def main():
     opts.define("utilport", default=8081, type=int, help="listening port number for an util server")
     opts.define("utiladdress", default="127.0.0.1", type=str, help="address for an util server")
     opts.define("enableutil", default=False, type=bool, help="enable util server")
+    opts.define("security_mod", default="", type=str, help="version of Ticket Vendoring Machine")
     opts.define("client_id", default=0, type=int, help="client id used for authentication")
     opts.define("client_secret", default='', type=str, help="client secret used for authentication")
     opts.parse_command_line()
@@ -1061,6 +1064,7 @@ def main():
                              default_tracing_chance=opts.tracing_chance,
                              srw_config=srw_config,
                              allow_json_rpc=opts.allow_json_rpc,
+                             security_mod=opts.security_mod,
                              client_id=opts.client_id,
                              client_secret=opts.client_secret,
                              mapped_headers=opts.mapped_headers)

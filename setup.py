@@ -67,8 +67,6 @@ setup(
         "cocaine.tools.actions.mql",
         "cocaine.tools.helpers",
         "cocaine.tools.interactive",
-        "cocaine.tools.plugins",
-        "cocaine.tools.plugins.secure",
     ],
     entry_points={
         'console_scripts': [

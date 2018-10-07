@@ -1,7 +1,6 @@
 # coding=utf-8
 
 import contextlib
-import copy
 import logging
 import os
 
@@ -11,15 +10,13 @@ import collections
 import six
 import yaml
 from tornado import gen
-from tornado.util import import_object
 from cerberus import Validator
 
 from cocaine.tools.cli import Executor
 
 from cocaine.decorators import coroutine
 from cocaine.exceptions import CocaineError
-from cocaine.services import Locator, Service
-from .plugins.secure.promiscuous import Promiscuous
+from cocaine.services import SecureServiceRepository
 from .version import __version__
 
 
@@ -37,10 +34,6 @@ def _print_experimental_warning():
     click.echo('')
     click.echo('THIS COMMAND IS EXPERIMENTAL. DO NOT DEPEND ON IT IN YOUR SCRIPTS')
     click.echo('')
-
-
-class SecureServiceError(CocaineError):
-    pass
 
 
 def set_verbosity(ctx, param, value):
@@ -101,64 +94,6 @@ def with_options(func):
     return func
 
 
-class SecureService(object):
-    def __init__(self, secure, wrapped):
-        self._secure = secure
-        self._wrapped = wrapped
-
-    @coroutine
-    def connect(self, traceid=None):
-        yield self._wrapped.connect(traceid)
-
-    def disconnect(self):
-        return self._wrapped.disconnect()
-
-    def __getattr__(self, name):
-        @coroutine
-        def wrapper(*args, **kwargs):
-            try:
-                kwargs['authorization'] = yield self._secure.fetch_token()
-            except Exception as err:
-                raise SecureServiceError('failed to fetch secure token: {}'.format(err))
-            raise gen.Return((yield getattr(self._wrapped, name)(*args, **kwargs)))
-        return wrapper
-
-
-class ServiceFactory(object):
-    def create_service(self, name):
-        raise NotImplementedError
-
-    def create_secure_service(self, name):
-        raise NotImplementedError
-
-
-class PooledServiceFactory(ServiceFactory):
-    def __init__(self, endpoints):
-        self._secure = None
-        self._endpoints = endpoints
-        self._cache = {}
-
-    @property
-    def secure(self):
-        return self._secure
-
-    @secure.setter
-    def secure(self, value):
-        self._secure = value
-
-    def create_service(self, name):
-        if name not in self._cache:
-            if name == 'locator':
-                service = Locator(endpoints=self._endpoints)
-            else:
-                service = Service(name, endpoints=self._endpoints)
-            self._cache[name] = service
-        return self._cache[name]
-
-    def create_secure_service(self, name):
-        return SecureService(self._secure, self.create_service(name))
-
-
 class Configurator(object):
     SCHEMA = {
         'locator': {
@@ -179,7 +114,7 @@ class Configurator(object):
             'schema': {
                 'mod': {
                     'type': 'string',
-                    'allowed': ['TVM'],
+                    'allowed': ['TVM', 'TVM2'],
                 },
                 'client_id': {
                     'type': 'integer',
@@ -264,30 +199,6 @@ class Configurator(object):
             raise ValueError('failed to validate configuration file: {}'.format(self._validator.errors))
 
 
-class PluginLoader(object):
-    def __init__(self):
-        self._secure = Promiscuous(None)
-
-    def load(self, config, repo):
-        self._load_secure(config, repo)
-
-    def _load_secure(self, config, repo):
-        if 'secure' in config:
-            ty = config['secure'].get('mod')
-            if ty is None:
-                return
-            kwargs = copy.deepcopy(config['secure'])
-            kwargs.pop('mod')
-
-            if not ty.startswith('cocaine.tools.plugins.secure'):
-                ty = 'cocaine.tools.plugins.secure.' + ty.lower() + '.' + ty
-            self._secure = import_object(ty)(repo, **kwargs)
-            log.info('imported "%s" secure plugin', ty)
-
-    def secure(self):
-        return self._secure
-
-
 class Context(object):
     def __init__(self, host, port, timeout, **kwargs):
         self._timeout = timeout
@@ -304,12 +215,10 @@ class Context(object):
 
         self._endpoints = [(host, int(port))]
 
-        self._repo = PooledServiceFactory(endpoints=self._endpoints)
-
-        self._loader = PluginLoader()
-        self._loader.load(self._configurator.config, self._repo)
-
-        self._repo.secure = self._loader.secure()
+        self._repo = SecureServiceRepository(
+            self._endpoints,
+            **self._configurator.config.get('secure', {})
+        )
 
     @property
     def timeout(self):
