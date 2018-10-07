@@ -1,3 +1,10 @@
+cocaine-tools (0.12.14.8) unstable; urgency=low
+
+  * feat: update framework to 0.12.14.6
+  * feat: support TVM2
+
+ -- Artem Selishchev <arselishev@gmail.com>  Mon, 08 Oct 2018 01:37:37 +0300
+
 cocaine-tools (0.12.14.7) unstable; urgency=low
 
   * [Repository]: Add debuild artifacts to gitignore.
