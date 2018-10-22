@@ -1,3 +1,9 @@
+cocaine-tools (0.12.14.9) unstable; urgency=low
+
+  * fix: add dependency to six
+
+ -- Artem Selishchev <arselishev@gmail.com>  Mon, 22 Oct 2018 13:45:14 +0300
+
 cocaine-tools (0.12.14.8) unstable; urgency=low
 
   * feat: update framework to 0.12.14.6
